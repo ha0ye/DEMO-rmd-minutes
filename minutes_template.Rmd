@@ -1,0 +1,48 @@
+---
+output:
+  word_document:
+    reference_docx: "minutes_template.docx"
+params:
+  file_in: "minutes_2020-08-14.md"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(include = FALSE)
+```
+
+```{r check for file existence}
+md_file <- here::here("markdown_notes", params$file_in)
+stopifnot(file.exists(md_file))
+md_text <- readLines(md_file)
+```
+
+```{r check header and extract date}
+date_line <- grep("^HSCL Faculty", md_text, ignore.case = TRUE)
+stopifnot(length(date_line) > 0)
+date_line <- min(date_line)
+date_text <- sub("^.+, (.+)", "\\1", md_text[date_line])
+day <- as.Date(date_text)
+md_text <- tail(md_text, -date_line)
+```
+
+```{r check and extract attendee}
+attendees_line <- grep("^attendees", md_text, ignore.case = TRUE)
+stopifnot(length(attendees_line) > 0)
+attendees_line <- min(attendees_line)
+attendees_text <- sub("attendees:\\s*(.+)", "\\1", md_text[attendees_line], perl = TRUE)
+attendees_text <- strsplit(attendees_text, ", ")[[1]]
+md_text <- tail(md_text, -attendees_line)
+```
+
+```{r write out contents}
+writeLines(md_text, "minutes_contents.md")
+```
+
+# HSCL Faculty Meeting Minutes, `r format(day, "%B %e, %Y")`
+
+# Present: `r sort(attendees_text)`
+
+# **Bold Items are Action**
+
+```{r, child = "minutes_contents.md"}
+```
